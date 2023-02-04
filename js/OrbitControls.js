@@ -270,7 +270,7 @@ print("滚动!!");
 
 		
 		
-print(STATE.ROTATE,"!!!");
+print(STATE.ROTATE,state,"!!!");
 		if ( state === STATE.ROTATE ) {
 print("!!!");
 print(event.clientX);

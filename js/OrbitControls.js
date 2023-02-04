@@ -272,6 +272,7 @@ print("滚动!!",STATE.ZOOM,STATE.ROTATE);
 		
 		//if ( state === STATE.ROTATE ) {
 		if ( state === 1 ) {
+print(event.clientX, event.clientY );
 			rotateEnd.set( event.clientX, event.clientY );
 			rotateDelta.subVectors( rotateEnd, rotateStart );
 

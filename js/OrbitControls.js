@@ -230,7 +230,8 @@ print(event);
 			if ( event.button === 1 )
 				state = STATE.ZOOM;
 			if ( event.button === 2 )
-				state = STATE.PAN;
+				//state = STATE.PAN;
+				state = STATE.ROTATE;
 		}
 		
 		

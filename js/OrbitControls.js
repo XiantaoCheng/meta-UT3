@@ -271,7 +271,8 @@ print("滚动!!");
 		
 		
 print(STATE.ROTATE,state,"!!!");
-		if ( state === STATE.ROTATE ) {
+		//if ( state === STATE.ROTATE ) {
+		if ( state === 1 ) {
 print("!!!");
 print(event.clientX);
 			rotateEnd.set( event.clientX, event.clientY );

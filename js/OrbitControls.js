@@ -226,10 +226,11 @@ THREE.OrbitControls = function ( object, domElement ) {
 		if ( state === STATE.NONE )
 		{
 			if ( event.button === 0 )		
-print("左键1!!");
-				state = STATE.PAN;
+//print("左键1!!");
+				state = STATE.ZOOM;
 				//state = STATE.ROTATE;
-			if ( event.button === 1 )
+			if ( event.button === 1 )		
+//print("滚动!!");
 				state = STATE.ZOOM;
 			if ( event.button === 2 )
 //print("右键");

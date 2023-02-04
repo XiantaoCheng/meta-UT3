@@ -222,7 +222,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 		if ( scope.userRotate === false ) return;
 
 		event.preventDefault();
-
+print(event)
 		if ( state === STATE.NONE )
 		{
 			if ( event.button === 2 )

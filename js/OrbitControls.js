@@ -227,8 +227,8 @@ THREE.OrbitControls = function ( object, domElement ) {
 		{
 			if ( event.button === 0 )		
 //print("左键1!!");
-				state = STATE.ZOOM;
-				//state = STATE.ROTATE;
+				//state = STATE.ZOOM;
+				state = STATE.ROTATE;
 			if ( event.button === 1 )		
 print("滚动!!");
 				state = STATE.ZOOM;
@@ -271,7 +271,8 @@ print("滚动!!");
 		
 		
 		if ( state === STATE.ROTATE ) {
-
+print("!!!");
+print(event.clientX);
 			rotateEnd.set( event.clientX, event.clientY );
 			rotateDelta.subVectors( rotateEnd, rotateStart );
 

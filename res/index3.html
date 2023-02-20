@@ -1,0 +1,1208 @@
+<!--
++[网页](web,H代码)
+-->
+
+<head>
+<script>
+function print() {
+    document.getElementById("cmd_window").innerHTML+="<br>";
+    for (var i=0; i < arguments.length; i++) {
+        text=arguments[i];
+        document.getElementById("cmd_window").innerHTML+=" "+text;
+    }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.15.1/dist/phaser-arcade-physics.min.js">
+</script>
+<script src="https://stemkoski.github.io/Three.js/js/Three.js"></script>
+<script src="js/OrbitControls.js"></script>
+
+
+</head>
+
+<html>
+
+<body>
+<p id="cmd_window">Hello world!</p>
+
+
+<script>
+
+
+
+// MAIN
+
+// standard global variables
+var container, scene, camera, renderer, controls, stats;
+var cube;
+
+class Scene3D {
+    constructor(ID='') {
+        this.m_ID=ID;
+        this.m_container='';
+        this.m_scene='';
+        this.m_camera='';
+        this.m_render='';
+        this.m_control='';
+    }
+
+    init(ID='') {
+        if(ID!=="") {
+            this.m_ID=ID;
+            this.m_container = document.getElementById(this.m_ID);
+        }
+        else {
+            this.m_container=document.body;
+        }
+        if(this.m_container===null) {
+            this.m_container=document.body;
+        }
+
+        // SCENE
+        this.m_scene = new THREE.Scene();
+    
+        // CAMERA
+        var SCREEN_WIDTH = this.m_container.offsetWidth; 
+        var SCREEN_HEIGHT = this.m_container.offsetHeight;
+        var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
+        this.m_camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+        this.m_scene.add(this.m_camera);
+        this.m_camera.position.set(0,150,400);
+        this.m_camera.lookAt(this.m_scene.position);
+        //this.m_camera.lookAt(new THREE.Vector3(0,600,0));
+        //this.m_camera.lookAt(0,600,0);
+    
+        //RENDER
+        this.m_renderer = new THREE.WebGLRenderer( {antialias:true} );
+        this.m_renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+        
+        this.m_container.appendChild( this.m_renderer.domElement );
+    
+        // CONTROLS
+        this.m_controls = new THREE.OrbitControls( this.m_camera, this.m_renderer.domElement );
+        // LIGHT
+        var light = new THREE.PointLight(0xffffff);
+        light.position.set(0,150,100);
+        this.m_scene.add(light);
+    
+        // FLOOR
+        var floorTexture = new THREE.ImageUtils.loadTexture( 'https://stemkoski.github.io/Three.js/images/checkerboard.jpg' );
+        floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping; 
+        floorTexture.repeat.set( 10, 10 );
+        var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
+    
+        var floorGeometry = new THREE.PlaneGeometry(1000, 1000, 10, 10);
+        var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.position.y = -0.;
+        floor.rotation.x = Math.PI / 2;
+        this.m_scene.add(floor);
+    
+        // SKYBOX/FOG
+        var skyBoxGeometry = new THREE.CubeGeometry( 10000, 10000, 10000 );
+        var skyBoxMaterial = new THREE.MeshBasicMaterial( { color: 0x9999ff, side: THREE.BackSide } );
+        var skyBox = new THREE.Mesh( skyBoxGeometry, skyBoxMaterial );
+        this.m_scene.add(skyBox);
+    }
+
+    update() {
+        this.m_renderer.render( this.m_scene, this.m_camera );
+        this.m_controls.update();
+    }
+
+    addBox(L,W,H,x,y,z) {
+        var material = new THREE.MeshNormalMaterial();
+        var cubeGeometry = new THREE.CubeGeometry( 1, 1, 1 );
+        var cube = new THREE.Mesh( cubeGeometry, material );
+        cube.position.set(x,y,z);
+        cube.scale.x=L;
+        cube.scale.y=W;
+        cube.scale.z=H;
+        this.m_scene.add( cube );
+        return cube;
+    }
+
+    addCylinder(R,H,x,y,z) {
+        var material = new THREE.MeshNormalMaterial();
+        var geometry = new THREE.CylinderGeometry( 1,1,1,80,4 );
+        var shape = new THREE.Mesh( geometry, material );
+        shape.position.set(x, y, z);
+        shape.scale.x=R;
+        shape.scale.y=H;
+        shape.scale.z=R;
+        this.m_scene.add( shape );
+        return shape;
+    }
+
+    addSphere(R,x,y,z) {
+        var material = new THREE.MeshNormalMaterial();
+        var geometry = new THREE.SphereGeometry( 1,32,16 );
+        var shape = new THREE.Mesh( geometry, material );
+        shape.scale.x=R;
+        shape.scale.y=R;
+        shape.scale.z=R;
+        shape.position.set(x, y, z);
+        this.m_scene.add( shape );
+        return shape;
+    }
+
+    addExtrudePolygon(shx,shy,height,x,y,z) {
+        const shape = new THREE.Shape();
+        for (var i=0;i<shx.length;i++) {
+            if(i==0) {
+                shape.moveTo(shx[i],shy[i]);
+            }
+            else {
+                shape.lineTo(shx[i],shy[i]);
+            }
+        }
+        const extrudeSettings = {
+        	steps: 2,
+                amount: height,
+        	bevelEnabled: false,
+        };
+        
+        const geometry = new THREE.ExtrudeGeometry( shape, extrudeSettings );
+        const material = new THREE.MeshNormalMaterial();
+        const mesh = new THREE.Mesh( geometry, material ) ;
+        mesh.position.set(x,y,z);
+        this.m_scene.add(mesh);
+        
+        return mesh;
+    }
+
+    setRotationByEuler(shape,alpha,beta,gamma) {
+        shape.setRotationFromEuler(new THREE.Euler(0,0,0,'XYZ'));
+        shape.rotateZ(alpha/180*Math.PI);
+        shape.rotateX(beta/180*Math.PI);
+        shape.rotateZ(gamma/180*Math.PI);
+        return shape;
+    }
+
+    rotateInWorld(shape,pt,angle,axis='Z') {
+        var T=new THREE.Matrix4().identity();
+        T=T.multiply(new THREE.Matrix4().makeTranslation(pt[0],pt[1],pt[2]));
+        if(axis==='X') {
+            T=T.multiply(new THREE.Matrix4().makeRotationX(angle/180*Math.PI));
+        }
+        else if(axis==='Y') {
+            T=T.multiply(new THREE.Matrix4().makeRotationY(angle/180*Math.PI));
+        }
+        else if(axis==='Z') {
+            T=T.multiply(new THREE.Matrix4().makeRotationZ(angle/180*Math.PI));
+        }
+        T=T.multiply(new THREE.Matrix4().makeTranslation(-pt[0],-pt[1],-pt[2]));
+        
+        shape.updateMatrix();
+        shape.applyMatrix(T);
+        return shape;
+    }
+
+    lookAt_pt(shape,pt) {
+        shape.lookAt(new THREE.Vector3(pt[0],pt[1],pt[2]));
+        return shape;
+    }
+
+    lookAt(shape,shape0) {
+        shape.lookAt(shape0.position);
+        return shape;
+    }
+
+    cameraLookAt_pt(pt) {
+        this.lookAt_pt(this.m_camera,pt);
+        this.m_controls.center.x=pt[0];
+        this.m_controls.center.y=pt[1];
+        this.m_controls.center.z=pt[2];
+    }
+
+    cameraLookAt(shape) {
+        this.lookAt(this.m_camera,shape);
+        this.m_controls.center.x=shape.position.x;
+        this.m_controls.center.y=shape.position.y;
+        this.m_controls.center.z=shape.position.z;
+    }
+
+}
+
+var world_3D=new Scene3D();
+
+function animate_3D() {
+    requestAnimationFrame(animate_3D);
+    world_3D.update();
+}
+
+function printMatrix(matrix) {
+    var list_val=matrix.elements;
+    var str_line='';
+    for(var i=0;i<4;i++) {
+        for(var j=0;j<4;j++) {
+            str_line+=`${list_val[j+i*4]}, `;
+        }
+        print(str_line);
+        str_line='';
+    }
+    print();
+}
+
+
+world_3D.init();
+var shape, pt, eulers;
+
+
+pt=[-59.47000000000007, 79.72625, 0.0];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(40.64,40.957499999999996,82.075,pt[0],pt[1],pt[2]+82.075/2);
+world_3D.rotateInWorld(shape,[-59.47000000000007, 79.72625, 0.0],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-59.47000000000007, 79.72625, 0.0],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-59.47000000000007, 79.72625, 0.0],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-97.97772727272734, 175.16556818181817, 118.30000000000001];
+eulers=[0.0, 0.0, -180.0];
+shape=world_3D.addBox(10.0,15.0,0.8,pt[0],pt[1],pt[2]+0.8/2);
+world_3D.rotateInWorld(shape,[-97.97772727272734, 175.16556818181817, 118.30000000000001],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-97.97772727272734, 175.16556818181817, 118.30000000000001],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-97.97772727272734, 175.16556818181817, 118.30000000000001],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-97.97772727272734, 55.91056818181817, 118.30000000000001];
+eulers=[0.0, 0.0, -180.0];
+shape=world_3D.addBox(10.0,15.0,0.8,pt[0],pt[1],pt[2]+0.8/2);
+world_3D.rotateInWorld(shape,[-97.97772727272734, 55.91056818181817, 118.30000000000001],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-97.97772727272734, 55.91056818181817, 118.30000000000001],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-97.97772727272734, 55.91056818181817, 118.30000000000001],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-97.97772727272734, 175.16556818181817, 18.605];
+shape=world_3D.addExtrudePolygon([-1.8181818181818183, 3.1818181818181817, 3.1818181818181817, -1.8181818181818183, -1.8181818181818183, 2.9318181818181817, 2.9318181818181817, -1.5681818181818186, -1.5681818181818186, -1.8181818181818183, -1.8181818181818183],[2.681818181818182, 2.681818181818182, -2.3181818181818183, -2.3181818181818183, -2.0681818181818183, -2.0681818181818183, 2.431818181818182, 2.431818181818182, -2.0681818181818183, -2.0681818181818183, 2.681818181818182],99.695, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, 90.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-97.97772727272734, 55.91056818181817, 18.605];
+shape=world_3D.addExtrudePolygon([-1.8181818181818183, 3.1818181818181817, 3.1818181818181817, -1.8181818181818183, -1.8181818181818183, 2.9318181818181817, 2.9318181818181817, -1.5681818181818186, -1.5681818181818186, -1.8181818181818183, -1.8181818181818183],[2.681818181818182, 2.681818181818182, -2.3181818181818183, -2.3181818181818183, -2.0681818181818183, -2.0681818181818183, 2.431818181818182, 2.431818181818182, -2.0681818181818183, -2.0681818181818183, 2.681818181818182],99.695, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, 90.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-98.20500000000007, 180.28375, 12.254999999999999];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(0.8,106.04499999999999,pt[0],pt[1],pt[2]+106.04499999999999/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-133.17000000000007, 175.98375, 8.254999999999999];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[90.0, 21.999999999999996, 0.0];
+shape=world_3D.addCylinder(0.8,85.09,pt[0],pt[1],pt[2]+85.09/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-98.20500000000007, 52.42874999999999, 12.254999999999999];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(0.8,106.04499999999999,pt[0],pt[1],pt[2]+106.04499999999999/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-133.17000000000007, 56.72874999999999, 8.254999999999999];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[90.0, 21.999999999999996, 0.0];
+shape=world_3D.addCylinder(0.8,85.09,pt[0],pt[1],pt[2]+85.09/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-98.20500000000007, 175.98375, 8.254999999999999];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(6.0,74.92999999999999,4.0,pt[0],pt[1],pt[2]+4.0/2);
+world_3D.rotateInWorld(shape,[-98.20500000000007, 175.98375, 8.254999999999999],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-98.20500000000007, 175.98375, 8.254999999999999],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-98.20500000000007, 175.98375, 8.254999999999999],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-98.20500000000007, 56.72874999999999, 8.254999999999999];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(6.0,74.92999999999999,4.0,pt[0],pt[1],pt[2]+4.0/2);
+world_3D.rotateInWorld(shape,[-98.20500000000007, 56.72874999999999, 8.254999999999999],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-98.20500000000007, 56.72874999999999, 8.254999999999999],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-98.20500000000007, 56.72874999999999, 8.254999999999999],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-98.21269230769238, 52.898749999999986, 120.96153846153842];
+shape=world_3D.addExtrudePolygon([0.0923076923076923, 0.09230769230769231, 1.7923076923076924, 1.7923076923076924, -1.8076923076923082, -1.8076923076923082, -0.10769230769230768, -0.10769230769230767, -1.8076923076923082, -1.8076923076923082, 1.7923076923076924, 1.7923076923076924, 0.0923076923076923],[-2.2615384615384615, 2.6384615384615393, 2.6384615384615393, 3.038461538461539, 3.038461538461539, 2.6384615384615393, 2.6384615384615393, -2.2615384615384615, -2.2615384615384615, -2.6615384615384614, -2.6615384615384614, -2.2615384615384615, -2.2615384615384615],126.915, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,180.0, 90.0, 0.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-97.97772727272734, 175.16556818181817, 12.254999999999999];
+shape=world_3D.addExtrudePolygon([-2.1818181818181817, 3.818181818181818, 3.818181818181818, -2.1818181818181817, -2.1818181818181817, 3.5681818181818175, 3.5681818181818175, -1.9318181818181817, -1.9318181818181817, -2.1818181818181817, -2.1818181818181817],[3.227272727272727, 3.227272727272727, -2.7727272727272725, -2.7727272727272725, -2.5227272727272725, -2.5227272727272725, 2.9772727272727275, 2.9772727272727275, -2.5227272727272725, -2.5227272727272725, 3.227272727272727],99.695, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, 90.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-97.97772727272734, 55.91056818181817, 12.254999999999999];
+shape=world_3D.addExtrudePolygon([-2.1818181818181817, 3.818181818181818, 3.818181818181818, -2.1818181818181817, -2.1818181818181817, 3.5681818181818175, 3.5681818181818175, -1.9318181818181817, -1.9318181818181817, -2.1818181818181817, -2.1818181818181817],[3.227272727272727, 3.227272727272727, -2.7727272727272725, -2.7727272727272725, -2.5227272727272725, -2.5227272727272725, 2.9772727272727275, 2.9772727272727275, -2.5227272727272725, -2.5227272727272725, 3.227272727272727],99.695, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, 90.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-98.20500000000007, 132.825, 45.245000000000005];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(63.459999999999994,63.459999999999994,2.54,pt[0],pt[1],pt[2]+2.54/2);
+world_3D.rotateInWorld(shape,[-98.20500000000007, 132.825, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-98.20500000000007, 132.825, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-98.20500000000007, 132.825, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-97.75924181557781, 132.81567203604303, 48.42];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(27.074999999999992,0.635,pt[0],pt[1],pt[2]+0.635/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-97.75924181557781, 122.81567203604304, 88.26499999999999];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(30.479999999999997,2.54,pt[0],pt[1],pt[2]+2.54/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-97.75924181557781, 132.81567203604303, 47.785000000000004];
+shape=world_3D.addExtrudePolygon([29.97287571444078, 29.789024510660383, 29.48342850814504, 29.05731823413868, 28.512409484321754, 27.850896413907634, 27.075442702553953, 26.189170828664782, 25.195649496272143, 24.098879265124403, 22.903276441844188, 21.61365529702028, 20.23520867983913, 18.773487108313986, 17.23437641930786, 15.624074068345855, 13.94906417464911, 12.21609141187524, 10.432133849697992, 8.604374855583556, 6.740174169905086, 4.847038270865779, 2.9325901485605566, 1.0045386098854119, -0.9293527621072009, -2.861296869417169, -4.78351445499199, -6.688265427049266, -8.567880025694521, -10.414789706337267, -12.221557615548818, -13.98090853664625, -15.685758184422255, -17.329241731061295, -18.90474144837833, -20.40591335507454, -21.826712761710922, -23.161418610539258, -24.404656512182413, -25.55142038640356, -26.597092619824352, -27.537462659424317, -28.368743966951737, -29.087589265976742, -29.69110402019213, -30.176858088689464, -30.54289551127875, -30.787742384449874, -30.91041279626173, -30.91041279626173, -30.787742384449874, -30.54289551127875, -30.176858088689464, -29.69110402019213, -29.087589265976742, -28.368743966951737, -27.537462659424317, -26.597092619824352, -25.55142038640356, -24.404656512182413, -23.161418610539258, -21.826712761710922, -20.40591335507454, -18.90474144837834, -17.32924173106129, -15.685758184422255, -13.980908536646256, -12.221557615548813, -10.414789706337267, -8.567880025694528, -6.688265427049266, -4.78351445499199, -2.8612968694171768, -0.929352762107216, 1.0045386098854192, 2.9325901485605645, 4.847038270865779, 6.740174169905079, 8.604374855583549, 10.432133849698007, 12.216091411875245, 13.949064174649111, 15.624074068345854, 17.234376419307853, 18.773487108313976, 20.235208679839136, 21.613655297020284, 22.903276441844188, 24.098879265124403, 25.19564949627214, 26.189170828664793, 27.075442702553953, 27.850896413907634, 28.512409484321754, 29.05731823413868, 29.48342850814504, 29.789024510660383, 29.97287571444078, 30.03424181557774, 28.13020090233777, 28.070753457823628, 27.89839874227408, 27.611912110674275, 27.21244714357603, 26.701612345413174, 26.081464667621884, 25.354501226023494, 24.52364924582003, 23.592254274691683, 22.56406671145719, 21.443226704541342, 20.234247481058492, 18.94199717363984, 17.571679218181753, 16.128811401445617, 14.619203642878261, 13.048934600116663, 11.42432719237961, 9.75192314030291, 8.03845662473922, 6.290827170590263, 4.5160718648521465, 2.7213370207530136, 0.9138494020686647, -0.8991128765011634, -2.7102496557347653, -4.512268127051495, -6.297912198078754, -8.059991710374186, -9.791411391656798, -11.485199425964215, -13.134535526693691, -14.732778399490929, -16.273492484396666, -17.750473869576634, -19.157775272284155, -20.48972998646861, -21.740974700601253, -22.906471093837165, -23.9815261235555, -24.961810922585588, -25.84337823002722, -26.622678285476848, -27.296573122660373, -27.862349204915464, -28.317728351645993, -28.660876911751288, -28.890413147092005, -29.00541279626173, -29.00541279626173, -28.890413147091998, -28.66087691175131, -28.317728351646004, -27.862349204915443, -27.296573122660373, -26.622678285476848, -25.843378230027174, -24.96181092258563, -23.9815261235555, -22.906471093837165, -21.740974700601253, -20.489729986468568, -19.15777527228421, -17.750473869576673, -16.273492484396684, -14.732778399490847, -13.134535526693774, -11.485199425964167, -9.79141139165688, -8.05999171037415, -6.297912198078766, -4.512268127051556, -2.7102496557346876, -0.8991128765011634, 0.913849402068756, 2.721337020752868, 4.516071864852115, 6.290827170590423, 8.038456624739352, 9.751923140302708, 11.424327192379593, 13.048934600116771, 14.619203642878235, 16.128811401445645, 17.57167921818169, 18.94199717363979, 20.234247481058514, 21.443226704541356, 22.564066711457226, 23.592254274691708, 24.52364924581996, 25.35450122602351, 26.081464667621912, 26.701612345413157, 27.212447143576046, 27.611912110674265, 27.89839874227407, 28.070753457823628, 28.19064261565159, 30.094683528891558, 29.97287571444078],[1.9424890350890371, 3.8678659488848277, 5.777705892062253, 7.664318613236245, 9.520107388846839, 11.337599612483732, 13.109476884434898, 14.828604480299234, 16.488060080003564, 18.081161641542394, 19.601494307202667, 21.04293623393172, 22.399683243838563, 23.666272195569697, 24.83760298245118, 25.908959068818145, 26.87602648183925, 27.734911182362666, 28.482154744837402, 29.11474828317232, 29.630144566458494, 30.02626827576905, 30.30152436073597, 30.45480446225503, 30.485491375456657, 30.39346153497215, 30.179085512487774, 29.843226524583404, 29.387236956863983, 28.81295291838004, 28.12268684826459, 27.319218204356865, 26.405782271306638, 25.386057133224778, 24.26414886333671, 23.044574990274743, 21.732246307584692, 20.332447099693514, 18.850813863960997, 17.293312614494194, 15.666214859114373, 13.97607234620842, 12.22969068315053, 10.434101932523332, 8.59653629648373, 6.724393003290705, 4.825210513224657, 2.9066361638684457, 0.9763953769780507, -0.957739449064148, -2.887980235954543, -4.806554585310755, -6.705737075376803, -8.57788036856983, -10.41544600460943, -12.211034755236627, -13.95741641829452, -15.64755893120047, -17.274656686580293, -18.832157936047096, -20.31379117177961, -21.71359037967079, -23.025919062360842, -24.245492935422806, -25.36740120531088, -26.387126343392737, -27.300562276442957, -28.104030920350688, -28.79429699046614, -29.368581028950082, -29.824570596669503, -30.160429584573873, -30.374805607058246, -30.466835447542756, -30.43614853434113, -30.28286843282207, -30.007612347855144, -29.611488638544596, -29.096092355258417, -28.463498816923494, -27.71625525444876, -26.857370553925342, -25.89030314090424, -24.818947054537283, -23.6476162676558, -22.38102731592465, -21.02428030601782, -19.582838379288763, -18.062505713628493, -16.46940415208967, -14.809948552385322, -13.090820956520991, -11.318943684569827, -9.501451460932937, -7.645662685322349, -5.759049964148366, -3.8492100209709146, -1.923833107175129, 0.009327963956951357, 0.06976967727076827, -1.8029496805474725, -3.607929922609613, -5.3983447438512275, -7.166984775702817, -8.906728328986539, -10.610570070445338, -12.271649230746357, -13.883277230378607, -15.438964612201692, -16.932447172199254, -18.357711183217507, -19.70901761012201, -20.980925218867007, -22.16831248642374, -23.266398223346805, -24.270760825936176, -25.177356080474738, -25.982533447849416, -26.683050762984315, -27.27608728989469, -27.759255079794986, -28.130608586526467, -28.38865250058438, -28.5323477702019, -28.561115785244528, -28.474840707069216, -28.27386993496553, -27.95901270730133, -27.531536843005554, -26.993163636508772, -26.346060926698012, -25.592834367794946, -24.736516937305446, -23.78055672329048, -22.728803040131506, -21.58549092870057, -20.355224103345787, -19.042956414357768, -17.6539719005632, -16.193863512366, -14.668510590909033, -13.08405519404309, -11.446877364428182, -9.763569439352061, -8.040909505715994, -6.285834107070709, -4.505410312603721, -2.7068072605456797, -0.8972672905814988, 0.9159232184954016, 2.72546318845967, 4.524066240517536, 6.304490034984524, 8.059565433629984, 9.782225367265964, 11.465533292342084, 13.10271112195708, 14.68716651882285, 16.212519440279905, 17.6726278284771, 19.06161234227167, 20.373880031259734, 21.604146856614502, 22.747458968045372, 23.79921265120439, 24.755172865219397, 25.611490295708816, 26.36471685461194, 27.01181956442263, 27.55019277091947, 27.97766863521523, 28.29252586287943, 28.493496634983128, 28.57977171315843, 28.551003698115796, 28.407308428498297, 28.149264514440397, 27.777911007708834, 27.2947432178086, 26.70170669089826, 26.001189375763378, 25.19601200838854, 24.289416753850094, 23.28505415126075, 22.186968414337656, 20.999581146780937, 19.7276735380359, 18.376367111131415, 16.951103100113162, 15.457620540115578, 13.901933158292495, 12.290305158660196, 10.62922599835926, 8.925384256900546, 7.185640703616736, 5.417000671765117, 3.626585850523555, 1.8216056084612928, -1.9551546625968332, -1.8947129492830166, 1.9424890350890371],30.48, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, -0.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-161.07000000000008, 132.825, 45.245000000000005];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(19.05,45.72,29.21,pt[0],pt[1],pt[2]+29.21/2);
+world_3D.rotateInWorld(shape,[-161.07000000000008, 132.825, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-161.07000000000008, 132.825, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-161.07000000000008, 132.825, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-218.8550000000001, 113.775, 45.245000000000005];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(55.879999999999995,83.82,34.29,pt[0],pt[1],pt[2]+34.29/2);
+world_3D.rotateInWorld(shape,[-218.8550000000001, 113.775, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-218.8550000000001, 113.775, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-218.8550000000001, 113.775, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-294.1025000000001, 159.10999999999999, 45.245000000000005];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(80.645,7.619999999999999,8.254999999999999,pt[0],pt[1],pt[2]+8.254999999999999/2);
+world_3D.rotateInWorld(shape,[-294.1025000000001, 159.10999999999999, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-294.1025000000001, 159.10999999999999, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-294.1025000000001, 159.10999999999999, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-332.52000000000004, 124.81999999999998, 45.245000000000005];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(74.92999999999999,36.83,15.24,pt[0],pt[1],pt[2]+15.24/2);
+world_3D.rotateInWorld(shape,[-332.52000000000004, 124.81999999999998, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-332.52000000000004, 124.81999999999998, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-332.52000000000004, 124.81999999999998, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-384.59000000000003, 130.84999999999997, 45.245000000000005];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(64.13499999999999,29.209999999999997,12.065,pt[0],pt[1],pt[2]+12.065/2);
+world_3D.rotateInWorld(shape,[-384.59000000000003, 130.84999999999997, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-384.59000000000003, 130.84999999999997, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-384.59000000000003, 130.84999999999997, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-352.20500000000004, 153.0775, 45.245000000000005];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(35.559999999999995,19.685,12.065,pt[0],pt[1],pt[2]+12.065/2);
+world_3D.rotateInWorld(shape,[-352.20500000000004, 153.0775, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-352.20500000000004, 153.0775, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-352.20500000000004, 153.0775, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-332.52000000000004, 94.73749999999998, 45.245000000000005];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(53.339999999999996,13.334999999999999,10.16,pt[0],pt[1],pt[2]+10.16/2);
+world_3D.rotateInWorld(shape,[-332.52000000000004, 94.73749999999998, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-332.52000000000004, 94.73749999999998, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-332.52000000000004, 94.73749999999998, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-425.865, 132.11749999999998, 45.245000000000005];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(53.339999999999996,13.334999999999999,10.16,pt[0],pt[1],pt[2]+10.16/2);
+world_3D.rotateInWorld(shape,[-425.865, 132.11749999999998, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-425.865, 132.11749999999998, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-425.865, 132.11749999999998, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-425.865, 113.78249999999998, 45.245000000000005];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(53.339999999999996,13.334999999999999,10.16,pt[0],pt[1],pt[2]+10.16/2);
+world_3D.rotateInWorld(shape,[-425.865, 113.78249999999998, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-425.865, 113.78249999999998, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-425.865, 113.78249999999998, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-414.435, 78.06499999999998, 45.245000000000005];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(76.2,38.1,50.0,pt[0],pt[1],pt[2]+50.0/2);
+world_3D.rotateInWorld(shape,[-414.435, 78.06499999999998, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-414.435, 78.06499999999998, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-414.435, 78.06499999999998, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-386.495, 4.237499999999994, 45.245000000000005];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(78.105,20.32,19.05,pt[0],pt[1],pt[2]+19.05/2);
+world_3D.rotateInWorld(shape,[-386.495, 4.237499999999994, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-386.495, 4.237499999999994, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-386.495, 4.237499999999994, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-428.7225, -1.9537500000000096, 45.245000000000005];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(65.7225,47.625,12.7,pt[0],pt[1],pt[2]+12.7/2);
+world_3D.rotateInWorld(shape,[-428.7225, -1.9537500000000096, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-428.7225, -1.9537500000000096, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-428.7225, -1.9537500000000096, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-428.7225, 43.289999999999985, 45.245000000000005];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(31.75,24.764999999999997,12.7,pt[0],pt[1],pt[2]+12.7/2);
+world_3D.rotateInWorld(shape,[-428.7225, 43.289999999999985, 45.245000000000005],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-428.7225, 43.289999999999985, 45.245000000000005],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-428.7225, 43.289999999999985, 45.245000000000005],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-148.2100000000001, 91.63, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-177.74000000000007, 91.63, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-148.2100000000001, 67.34, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-177.74000000000007, 67.34, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-162.97500000000008, 79.485, 29.68625];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(45.720000000000006,60.96,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-162.97500000000008, 79.485, 29.68625],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-162.97500000000008, 79.485, 29.68625],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-162.97500000000008, 79.485, 29.68625],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-161.12454545454554, 73.03454545454545, 29.84500000000001];
+shape=world_3D.addExtrudePolygon([-16.53454545454546, 28.935454545454547, 28.935454545454547, -16.53454545454546, -16.53454545454546, 23.935454545454547, 23.935454545454547, -11.534545454545457, -11.534545454545457, -16.53454545454546, -16.53454545454546],[32.20545454545455, 32.20545454545455, -28.50454545454546, -28.50454545454546, -23.504545454545458, -23.504545454545458, 27.20545454545455, 27.20545454545455, -23.504545454545458, -23.504545454545458, 32.20545454545455],15.24, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, 90.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-162.97500000000008, 79.485, 45.085];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(45.720000000000006,60.96,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-162.97500000000008, 79.485, 45.085],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-162.97500000000008, 79.485, 45.085],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-162.97500000000008, 79.485, 45.085],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-148.2100000000001, 289.99, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-177.74000000000007, 289.99, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-148.2100000000001, 189.02, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-177.74000000000007, 189.02, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-162.97500000000008, 239.505, 29.68625];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(152.39999999999998,60.959999999999994,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-162.97500000000008, 239.505, 29.68625],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-162.97500000000008, 239.505, 29.68625],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-162.97500000000008, 239.505, 29.68625],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-161.12454545454554, 218.50727272727272, 29.84500000000001];
+shape=world_3D.addExtrudePolygon([-55.32727272727273, 96.82272727272728, 96.82272727272728, -55.32727272727273, -55.32727272727273, 91.82272727272728, 91.82272727272728, -50.32727272727272, -50.32727272727272, -55.32727272727273, -55.32727272727273],[32.20545454545455, 32.20545454545455, -28.50454545454546, -28.50454545454546, -23.504545454545458, -23.504545454545458, 27.20545454545455, 27.20545454545455, -23.504545454545458, -23.504545454545458, 32.20545454545455],15.24, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, 90.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-162.97500000000008, 239.505, 45.085];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(152.39999999999998,60.959999999999994,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-162.97500000000008, 239.505, 45.085],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-162.97500000000008, 239.505, 45.085],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-162.97500000000008, 239.505, 45.085],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-66.77000000000007, 118.05999999999999, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-66.77000000000007, 147.58999999999997, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-167.74000000000007, 118.05999999999999, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-167.74000000000007, 147.58999999999997, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-117.25500000000007, 132.825, 29.68625];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(152.39999999999998,60.959999999999994,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-117.25500000000007, 132.825, 29.68625],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-117.25500000000007, 132.825, 29.68625],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-117.25500000000007, 132.825, 29.68625],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-138.25272727272733, 130.97454545454545, 29.84500000000001];
+shape=world_3D.addExtrudePolygon([-55.32727272727273, 96.82272727272728, 96.82272727272728, -55.32727272727273, -55.32727272727273, 91.82272727272728, 91.82272727272728, -50.32727272727272, -50.32727272727272, -55.32727272727273, -55.32727272727273],[32.20545454545455, 32.20545454545455, -28.50454545454546, -28.50454545454546, -23.504545454545458, -23.504545454545458, 27.20545454545455, 27.20545454545455, -23.504545454545458, -23.504545454545458, 32.20545454545455],15.24, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, -0.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-117.25500000000007, 132.825, 45.085];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(152.39999999999998,60.959999999999994,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-117.25500000000007, 132.825, 45.085],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-117.25500000000007, 132.825, 45.085],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-117.25500000000007, 132.825, 45.085],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-271.09000000000003, 289.99, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-300.62, 289.99, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-271.09000000000003, 189.02, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-300.62, 189.02, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-285.855, 239.505, 29.68625];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(152.39999999999998,60.959999999999994,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-285.855, 239.505, 29.68625],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-285.855, 239.505, 29.68625],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-285.855, 239.505, 29.68625],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-284.00454545454545, 218.50727272727272, 29.84500000000001];
+shape=world_3D.addExtrudePolygon([-55.32727272727273, 96.82272727272728, 96.82272727272728, -55.32727272727273, -55.32727272727273, 91.82272727272728, 91.82272727272728, -50.32727272727272, -50.32727272727272, -55.32727272727273, -55.32727272727273],[32.20545454545455, 32.20545454545455, -28.50454545454546, -28.50454545454546, -23.504545454545458, -23.504545454545458, 27.20545454545455, 27.20545454545455, -23.504545454545458, -23.504545454545458, 32.20545454545455],15.24, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, 90.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-285.855, 239.505, 45.085];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(152.39999999999998,60.959999999999994,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-285.855, 239.505, 45.085],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-285.855, 239.505, 45.085],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-285.855, 239.505, 45.085],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-256.09000000000003, 61.389999999999986, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-285.62, 61.389999999999986, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-256.09000000000003, -9.10000000000002, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-285.62, -9.10000000000002, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-270.855, 26.144999999999985, 29.68625];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(121.92,60.96,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-270.855, 26.144999999999985, 29.68625],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-270.855, 26.144999999999985, 29.68625],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-270.855, 26.144999999999985, 29.68625],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-269.00454545454545, 9.303636363636354, 29.84500000000001];
+shape=world_3D.addExtrudePolygon([-44.243636363636355, 77.42636363636366, 77.42636363636366, -44.243636363636355, -44.243636363636355, 72.42636363636366, 72.42636363636366, -39.243636363636355, -39.243636363636355, -44.243636363636355, -44.243636363636355],[32.20545454545455, 32.20545454545455, -28.50454545454546, -28.50454545454546, -23.504545454545458, -23.504545454545458, 27.20545454545455, 27.20545454545455, -23.504545454545458, -23.504545454545458, 32.20545454545455],15.24, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, 90.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-270.855, 26.144999999999985, 45.085];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(121.92,60.96,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-270.855, 26.144999999999985, 45.085],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-270.855, 26.144999999999985, 45.085],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-270.855, 26.144999999999985, 45.085],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-219.17000000000002, 102.82, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-219.17000000000002, 147.58999999999997, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-350.62000000000006, 102.82, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-350.62000000000006, 147.58999999999997, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-284.89500000000004, 125.20499999999998, 29.68625];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(182.88000000000002,76.2,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-284.89500000000004, 125.20499999999998, 29.68625],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-284.89500000000004, 125.20499999999998, 29.68625],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-284.89500000000004, 125.20499999999998, 29.68625],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-310.0490909090909, 122.66181818181816, 29.84500000000001];
+shape=world_3D.addExtrudePolygon([-66.41090909090909, 116.21909090909095, 116.21909090909095, -66.41090909090909, -66.41090909090909, 111.21909090909092, 111.21909090909092, -61.41090909090908, -61.41090909090908, -66.41090909090909, -66.41090909090909],[40.51818181818182, 40.51818181818182, -35.43181818181819, -35.43181818181819, -30.431818181818187, -30.431818181818187, 35.51818181818182, 35.51818181818182, -30.431818181818187, -30.431818181818187, 40.51818181818182],15.24, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, -0.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-284.89500000000004, 125.20499999999998, 45.085];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(182.88000000000002,76.2,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-284.89500000000004, 125.20499999999998, 45.085],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-284.89500000000004, 125.20499999999998, 45.085],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-284.89500000000004, 125.20499999999998, 45.085],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-392.05, 259.51, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-436.82, 259.51, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-392.05, 173.77999999999997, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-436.82, 173.77999999999997, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-414.435, 216.64499999999998, 29.68625];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(137.16000000000003,76.2,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-414.435, 216.64499999999998, 29.68625],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-414.435, 216.64499999999998, 29.68625],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-414.435, 216.64499999999998, 29.68625],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-411.89181818181817, 197.72545454545454, 29.84500000000001];
+shape=world_3D.addExtrudePolygon([-49.78545454545454, 87.12454545454548, 87.12454545454548, -49.78545454545454, -49.78545454545454, 82.12454545454547, 82.12454545454547, -44.78545454545454, -44.78545454545454, -49.78545454545454, -49.78545454545454],[40.51818181818182, 40.51818181818182, -35.43181818181819, -35.43181818181819, -30.431818181818187, -30.431818181818187, 35.51818181818182, 35.51818181818182, -30.431818181818187, -30.431818181818187, 40.51818181818182],15.24, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, 90.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-414.435, 216.64499999999998, 45.085];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(137.16000000000003,76.2,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-414.435, 216.64499999999998, 45.085],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-414.435, 216.64499999999998, 45.085],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-414.435, 216.64499999999998, 45.085],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-392.05, 122.35, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-436.82, 122.35, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-392.05, -9.10000000000003, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-436.82, -9.10000000000003, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addCylinder(5.715000000000001,29.685,pt[0],pt[1],pt[2]+29.685/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[-414.435, 56.62499999999998, 29.68625];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(182.88000000000002,76.2,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-414.435, 56.62499999999998, 29.68625],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-414.435, 56.62499999999998, 29.68625],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-414.435, 56.62499999999998, 29.68625],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-411.89181818181817, 31.470909090909075, 29.84500000000001];
+shape=world_3D.addExtrudePolygon([-66.41090909090909, 116.21909090909095, 116.21909090909095, -66.41090909090909, -66.41090909090909, 111.21909090909092, 111.21909090909092, -61.41090909090908, -61.41090909090908, -66.41090909090909, -66.41090909090909],[40.51818181818182, 40.51818181818182, -35.43181818181819, -35.43181818181819, -30.431818181818187, -30.431818181818187, 35.51818181818182, 35.51818181818182, -30.431818181818187, -30.431818181818187, 40.51818181818182],15.24, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, 90.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+pt=[-414.435, 56.62499999999998, 45.085];
+eulers=[0.0, 0.0, 90.0];
+shape=world_3D.addBox(182.88000000000002,76.2,0.15875,pt[0],pt[1],pt[2]+0.15875/2);
+world_3D.rotateInWorld(shape,[-414.435, 56.62499999999998, 45.085],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[-414.435, 56.62499999999998, 45.085],eulers[1],'X');
+world_3D.rotateInWorld(shape,[-414.435, 56.62499999999998, 45.085],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+pt=[-233.09629629629623, 185.48814814814818, 0.0];
+shape=world_3D.addExtrudePolygon([113.77629629629622, 113.77629629629622, 159.49629629629624, 159.49629629629624, 285.22629629629625, 285.22629629629625, 62.97629629629622, 62.97629629629622, -257.0637037037038, -257.0637037037038, -266.9037037037038, -266.9037037037038, -281.9037037037038, -281.9037037037038, -272.0637037037038, -272.0637037037038, 77.97629629629621, 77.97629629629621, 300.2262962962962, 300.2262962962962, 174.49629629629624, 174.49629629629624, 128.7762962962962, 128.7762962962962, -281.9037037037038, -281.9037037037038, 113.77629629629622],[214.5118518518518, 184.35185185185185, 184.35185185185185, 90.21185185185183, 90.21185185185183, -193.7931481481482, -193.7931481481482, -264.27814814814815, -264.27814814814815, -191.8881481481482, -191.8881481481482, 214.5118518518518, 214.5118518518518, -206.8881481481482, -206.8881481481482, -279.2781481481482, -279.2781481481482, -208.7931481481482, -208.7931481481482, 105.21185185185182, 105.21185185185182, 199.35185185185185, 199.35185185185185, 229.51185185185184, 229.51185185185184, 214.5118518518518, 214.5118518518518],132.24, pt[0], pt[1], pt[2]);
+world_3D.setRotationByEuler(shape,0.0, 0.0, -0.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
+animate_3D();
+world_3D.update();
+
+</script>
+
+</body>
+</html>
+
+<!--
++[网页](web,H代码)
+-->

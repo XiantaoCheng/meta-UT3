@@ -86,11 +86,90 @@ body {
 <div class="content">
     <p><mathjax style=\"font-size:1.5em\">
 <!--
-地址::文档/S应用/博客生成器/测试文档.html
-+[保存文本](,测试文档)
++[H函数](,隐式RK)
+参考::https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods#Implicit_Runge%E2%80%93Kutta_methods
++[打开网页](,参考)
 -->
 
+<h2>Backward Euler method</h2>
+The formulas are,
+$$k_{1}=f(t\ _{n}+h,y\ _{n}+h\ k_{1})\tag{1}$$
+$$y\ _{n+1}=y\ _{n}+h\ k_{1}\tag{2}$$
+<h3>Electron in EM fields</h3>
+The equations are,
+$$\begin{cases}
+f_{1}(t,x,y,v_{x},v_{y})=v_{x}\\ f_{2}(t,x,y,v_{x},v_{y})=v_{y}\\ f_{3}(t,x,y,v_{x},v_{y})=\left(v_{y}\ B_{z}(x,y)+E_{x}(x,y)\right)\ q/m\\ f_{4}(t,x,y,v_{x},v_{y})=\left(-v_{x}\ B_{z}(x,y)+E_{y}(x,y)\right)\ q/m
+\end{cases}
 
+\tag{3}$$
+Then,
+$$\begin{cases}
+k_{11}=v_{x}+h\ k_{13}\\ k_{12}=v_{y}+h\ k_{14}\\ k_{13}=\left(\left(v_{y}+h\ k_{14}\right)\ B_{z}(x+h\ k_{11},y+h\ k_{12})+E_{x}(x+h\ k_{11},y+h\ k_{12})\right)\ q/m\\ k_{14}=\left(-\left(v_{x}+h\ k_{13}\right)\ B_{z}(x+h\ k_{11},y+h\ k_{12})+E_{y}(x+h\ k_{11},y+h\ k_{12})\right)\ q/m
+\end{cases}
+
+\tag{4}$$
+$$\begin{cases}
+k_{11}=v_{x}+h\ k_{13}\\ k_{12}=v_{y}+h\ k_{14}\\ k_{13}=f_{3}+\frac{\partial f_{3}}{\partial x}\ h\ k_{11}+\frac{\partial f_{3}}{\partial y}\ h\ k_{12}+\frac{\partial f_{3}}{\partial v_{y}}\ h\ k_{14}\\ k_{14}=f_{4}+\frac{\partial f_{4}}{\partial x}\ h\ k_{11}+\frac{\partial f_{4}}{\partial y}\ h\ k_{12}+\frac{\partial f_{3}}{\partial v_{x}}\ h\ k_{13}
+\end{cases}
+
+\tag{5}$$
+$$\begin{cases}
+k_{11}-h\ k_{13}=v_{x}\\ k_{12}-h\ k_{14}=v_{y}\\ -\frac{\partial f_{3}}{\partial x}\ h\ k_{11}-\frac{\partial f_{3}}{\partial y}\ h\ k_{12}+k_{13}-\frac{\partial f_{3}}{\partial v_{y}}\ h\ k_{14}=f_{3}\\ -\frac{\partial f_{4}}{\partial x}\ h\ k_{11}-\frac{\partial f_{4}}{\partial y}\ h\ k_{12}-\frac{\partial f_{3}}{\partial v_{x}}\ h\ k_{13}+k_{14}=f_{4}
+\end{cases}
+
+\tag{6}$$
+The matrix is,
+$$\mathbf{A}=\begin{pmatrix}
+1&0&-h&0\\ 0&1&0&-h\\ -\frac{\partial f_{3}}{\partial x}\ h&-\frac{\partial f_{3}}{\partial y}\ h&1&-\frac{\partial f_{3}}{\partial v_{y}}\ h\\ -\frac{\partial f_{4}}{\partial x}\ h&-\frac{\partial f_{4}}{\partial y}\ h&-\frac{\partial f_{3}}{\partial v_{x}}\ h&1
+\end{pmatrix}
+
+\tag{7}$$
+Then the result is,
+$$\vec{k_{1}}=\mathbf{A}^{-1}\ \vec{f}\tag{8}$$
+
+
+<h2>Collocation method</h2>
+The formulas are,
+$$k_{1}=f(t\ _{n},y\ _{n})\tag{11}$$
+$$k_{2}=f(t\ _{n}+h,y\ _{n}+h\ k_{1}/2+h\ k_{2}/2)\tag{12}$$
+$$y\ _{n+1}=y\ _{n}+h\ k_{1}/2+h\ k_{2}/2\tag{13}$$
+<h3>Electron in EM fields</h3>
+The process is same. Equations are,
+$$\begin{cases}
+k_{11}=f_{1}\\ k_{12}=f_{2}\\ k_{13}=f_{3}\\ k_{14}=f_{4}
+\end{cases}
+
+\tag{14}$$
+The second set of equations is,
+$$\begin{cases}
+k_{21}=v_{x}+h\ k_{13}/2+h\ k_{23}/2\\ k_{22}=v_{y}+h\ k_{14}/2+h\ k_{24}/2\\ k_{23}=\left(\left(v_{y}+h\ k_{14}/2+h\ k_{24}/2\right)\ B_{z}(x+h\ k_{11}/2+h\ k_{21}/2,y+h\ k_{12}/2+h\ k_{22}/2)+E_{x}(x+h\ k_{11}/2+h\ k_{21}/2,y+h\ k_{12}/2+h\ k_{22}/2)\right)\ q/m\\ k_{24}=\left(-\left(v_{x}+h\ k_{13}/2+h\ k_{23}/2\right)\ B_{z}(x+h\ k_{11}/2+h\ k_{21}/2,y+h\ k_{12}/2+h\ k_{22}/2)+E_{y}(x+h\ k_{11}/2+h\ k_{21}/2,y+h\ k_{12}/2+h\ k_{22}/2)\right)\ q/m
+\end{cases}
+
+\tag{15}$$
+Then the coefficient matrix is same as eq.[7].,
+$$\mathbf{A}=\begin{pmatrix}
+1&0&-h/2&0\\ 0&1&0&-h/2\\ -\frac{\partial f_{3}}{\partial x}\ h/2&-\frac{\partial f_{3}}{\partial y}\ h/2&1&-\frac{\partial f_{3}}{\partial v_{y}}\ h/2\\ -\frac{\partial f_{4}}{\partial x}\ h/2&-\frac{\partial f_{4}}{\partial y}\ h/2&-\frac{\partial f_{3}}{\partial v_{x}}\ h/2&1
+\end{pmatrix}
+
+\tag{17}$$
+
+where, 
+$$\frac{\partial f_{i}}{\partial x_{j}}=\frac{\partial f_{i}(v_{x}+h\ k_{11}/2,v_{y}+h\ k_{12}/2,x+h\ k_{13}/2,y+h\ k_{14}/2)}{\partial x_{j}}\tag{16}$$
+
+
+
+<!--
+[17].:
+式(15)转换为"表达式"
+
+验证公式(M函数):...
+对比ODE(M函数):...
++[新建阅读窗口](,对比ODE)
+在选择区域中, 将'验证公式'的"Delta_t"替换为"h/2"
+
+Nini, 打开公式分析器(文件)
++[H函数](,隐式RK)
+-->
     </mathjax></p>
 </div>
 

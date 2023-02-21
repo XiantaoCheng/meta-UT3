@@ -9,68 +9,24 @@ LaTeX数学记号::https://oeis.org/wiki/List_of_LaTeX_mathematical_symbols
   <head>
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script src="https://stemkoski.github.io/Three.js/js/Three.js"></script>
+<script src="../js/OrbitControls.js"></script>
+<script type="text/javascript" src="../js/threeWorld.js"></script>
 
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../css/styleSheet.css">
 <style>
-* {
-  box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-/* Style the top navigation bar */
-.topnav {
-  overflow: hidden;
-  background-color: #333;
-}
-
-/* Style the topnav links */
-.topnav a {
-  float: left;
-  display: block;
-  color: #f2f2f2;
-  text-align: center;
-  padding: 14px 16px;
-  text-decoration: none;
-}
-
-/* Change color on hover */
-.topnav a:hover {
-  background-color: #ddd;
-  color: black;
-}
-
-
-/* Style the content */
-.content {
-  background-color: #fff;
-  padding: 10px;
-}
-
-/*
-+[网页](web,实验室日历模板)
-*/
-
-/* Style the footer */
-.footer {
-  background-color: #333;
-  padding: 10px;
-  margin-top: 20px
-}
-
-.footer p {
-  color: #ddd
+.w3D {
+    background-color: #000;
+    width: 400px;
+    height: 200px;
+    border: 2px solid black;
+    position: float; /* fixed or static */
 }
 
 </style>
-
-
   </head>
 
 
@@ -90,7 +46,7 @@ test<br>
 
 $$
 a\ x^{2}=b
-\tag{[1].}
+\tag{1}
 $$
 
 test<br>
@@ -98,12 +54,58 @@ test<br>
 test<br>
 <img src="../res/示意图.png" height="200">
 
-test<br>
+
+<br>
+<div id="canvas" class="w3D"></div>
+<br>test<br>
+<div id="canvas1" class="w3D"></div>
+<br>test<br>
+<br>test<br>
+<br>test<br>
+<script>
+world_3D.init("canvas");
+var shx=[10,10,20,20,30,30,40,40];
+var shy=[0,10,10,20,20,30,30,0];
+
+var shape0=world_3D.addBox(100,100,10,100,10,0);
+var shape1=world_3D.addCylinder(5,500,0,65,0);
+var shape2=world_3D.addSphere(10,0,65,0);
+var shape3=world_3D.addExtrudePolygon(shx,shy,300,0,0,0)
+
+
+var angle=120;
+var pt=[100,0,0];
+//world_3D.rotateInWorld(shape0,pt,angle,'Y');
+
+animate_3D();
+world_3D.update();
+</script>
+
+<script>
+var world_3D_1=new Scene3D()
+world_3D_1.init("canvas1");
+var shx=[10,10,20,20,30,30,40,40];
+var shy=[0,10,10,20,20,30,30,0];
+
+var shape0=world_3D_1.addBox(100,100,10,100,10,0);
+var shape1=world_3D_1.addCylinder(5,500,0,65,0);
+var shape2=world_3D_1.addSphere(10,0,65,0);
+var shape3=world_3D_1.addExtrudePolygon(shx,shy,300,0,0,0)
+
+
+var angle=120;
+var pt=[100,0,0];
+//world_3D_1.rotateInWorld(shape0,pt,angle,'Y');
+
+animate_3D();
+world_3D_1.update();
+</script>
 
 
 
     </mathjax></p>
 </div>
+<p id="cmd_window"></p>
 
 <div class="footer">
   <p>Footer</p>

@@ -5,6 +5,14 @@
  * @author WestLangley / http://github.com/WestLangley
  */
 
+function print() {
+    document.getElementById("cmd_window").innerHTML+="<br>";
+    for (var i=0; i < arguments.length; i++) {
+        text=arguments[i];
+        document.getElementById("cmd_window").innerHTML+=" "+text;
+    }
+}
+
 THREE.OrbitControls = function ( object, domElement ) {
 
 	this.object = object;
@@ -149,7 +157,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 	};
 
 	this.update = function () {
-
+	
 		var position = this.object.position;
 		var offset = position.clone().sub( this.center );
 
@@ -184,6 +192,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 		offset.x = radius * Math.sin( phi ) * Math.sin( theta );
 		offset.y = radius * Math.cos( phi );
 		offset.z = radius * Math.sin( phi ) * Math.cos( theta );
+
 
 		position.copy( this.center ).add( offset );
 
@@ -230,7 +239,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 				//state = STATE.ZOOM;
 				state = STATE.ROTATE;
 			if ( event.button === 1 )		
-print("滚动!!",STATE.ZOOM,STATE.ROTATE);
+//print("滚动!!",STATE.ZOOM,STATE.ROTATE);
 				state = STATE.ZOOM;
 			if ( event.button === 2 )
 //print("右键");
@@ -269,16 +278,16 @@ print("滚动!!",STATE.ZOOM,STATE.ROTATE);
 		event.preventDefault();
 
 		
-		
-		//if ( state === STATE.ROTATE ) {
-		if ( state === 1 ) {
-print(event.clientX, event.clientY ,rotateEnd, rotateStart);
+		if ( state === STATE.ROTATE ) {
+		//if ( state === 0 ) {
+//print(event.clientX, event.clientY ,rotateEnd, rotateStart);
 			rotateEnd.set( event.clientX, event.clientY );
 			rotateDelta.subVectors( rotateEnd, rotateStart );
 
 			scope.rotateLeft( 2 * Math.PI * rotateDelta.x / PIXELS_PER_ROUND * scope.userRotateSpeed );
 			scope.rotateUp( 2 * Math.PI * rotateDelta.y / PIXELS_PER_ROUND * scope.userRotateSpeed );
 
+			scope.update();
 			rotateStart.copy( rotateEnd );
 
 		} else if ( state === STATE.ZOOM ) {
@@ -296,6 +305,7 @@ print(event.clientX, event.clientY ,rotateEnd, rotateStart);
 
 			}
 
+			scope.update();
 			zoomStart.copy( zoomEnd );
 
 		} else if ( state === STATE.PAN ) {

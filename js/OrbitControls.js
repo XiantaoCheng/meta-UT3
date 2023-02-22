@@ -43,7 +43,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 	this.maxDistance = Infinity;
 
 	// 65 /*A*/, 83 /*S*/, 68 /*D*/
-	this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40, ROTATE: 65, ZOOM: 83, PAN: 68 };
+	this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40, ROTATE: 65, ZOOM: 83, PAN: 68, A: 65, D: 68};
 
 	// internals
 
@@ -305,7 +305,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			}
 
-			scope.update();
 			zoomStart.copy( zoomEnd );
 
 		} else if ( state === STATE.PAN ) {
@@ -368,6 +367,14 @@ THREE.OrbitControls = function ( object, domElement ) {
 		switch ( event.keyCode ) {
 
 			
+			case scope.keys.A:
+				scope.zoomIn(1.1);
+				scope.update();
+				break;
+			case scope.keys.D:
+				scope.zoomOut(1.1);
+				scope.update();
+				break;
 			case scope.keys.UP:
 				scope.pan( new THREE.Vector3( 0, 1, 0 ) );
 				break;

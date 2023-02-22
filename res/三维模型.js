@@ -1,17 +1,45 @@
-
-var shx=[10,10,20,20,30,30,40,40];
-var shy=[0,10,10,20,20,30,30,0];
-
-var shape0=world_3D.addBox(100,100,10,100,10,0);
-var shape1=world_3D.addCylinder(5,500,0,65,0);
-var shape2=world_3D.addSphere(10,0,65,0);
-var shape3=world_3D.addExtrudePolygon(shx,shy,300,0,0,0)
+var shape, pt, eulers;
 
 
-var angle=120;
-var pt=[100,0,0];
-//world_3D.rotateInWorld(shape0,pt,angle,'Y');
+pt=[-50.0, -50.0, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(10.0,150.0,pt[0],pt[1],pt[2]+150.0/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+pt=[50.0, -50.0, 0.0];
+pt1=[-pt[1],pt[2],-pt[0]];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addCylinder(10.0,150.0,pt[0],pt[1],pt[2]+150.0/2);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+world_3D.setRotationByEuler(shape,0.0, 0.0, 0.0);
+world_3D.rotateInWorld(shape,pt1,eulers[2],'Y');
+world_3D.rotateInWorld(shape,pt1,-eulers[1],'Z');
+world_3D.rotateInWorld(shape,pt1,eulers[0],'Y');
+
+
+shape=world_3D.addSphere(30.0,0.0, 0.0, 80.0);
+world_3D.setRotationByEuler(shape,0.0, 0.0, -0.0);
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+pt=[0.0, 0.0, 0.0];
+eulers=[0.0, 0.0, -0.0];
+shape=world_3D.addBox(50.0,50.0,50.0,pt[0],pt[1],pt[2]+50.0/2);
+world_3D.rotateInWorld(shape,[0.0, 0.0, 0.0],eulers[2],'Z');
+world_3D.rotateInWorld(shape,[0.0, 0.0, 0.0],eulers[1],'X');
+world_3D.rotateInWorld(shape,[0.0, 0.0, 0.0],eulers[0],'Z');
+world_3D.rotateInWorld(shape,[0,0,0],-90,'X');
+world_3D.rotateInWorld(shape,[0,0,0],90,'Y');
+
+
+
 
 animate_3D();
 world_3D.update();
-

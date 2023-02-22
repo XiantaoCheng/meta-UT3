@@ -22,11 +22,11 @@ window.addEventListener("keydown", function (event) {
   switch (event.key) {
     case "Left": // IE/Edge specific value
     case "ArrowLeft":
-      window.location="../pages/title.html";
+      window.location="../pages/Beam_dump_structure.html";
       break;
     case "Right": // IE/Edge specific value
     case "ArrowRight":
-      window.location="../pages/Experiment_setup.html";
+      window.location="../pages/Simulation_scene.html";
       break;
     default:
       return; // Quit when this doesn't handle the key event.
@@ -47,35 +47,18 @@ window.addEventListener("keydown", function (event) {
 
 <body>
 <div class="topnav">
-  <a href="../pages/title.html">Prev</a>
+  <a href="../pages/Beam_dump_structure.html">Prev</a>
   <a href="../index.html">Home</a>
-  <a href="../pages/Experiment_setup.html">Next</a>
+  <a href="../pages/Simulation_scene.html">Next</a>
 </div>
 
 
 <div class="content">
     <p><mathjax style=\"font-size:1.5em\">
 
-<h1>Beam dump structure</h1>
-test<br>
-
-$$
-a\ x^{2}=b
-\tag{1}
-$$
-
-test<br>
-<img src="../res/示意图.png" height="200">
-
+<h1>Experiment setup</h1>
 <img src="../res/示意图.png" width="95%">
 
-test<br>
-
-<div id="三维模型" class="w3D"></div>
-<script>
-world_3D.init("三维模型");
-</script>
-<script type="text/javascript" src="../res/三维模型.js"></script>
 
 
 
